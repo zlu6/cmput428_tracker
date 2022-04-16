@@ -97,7 +97,8 @@ while True:
         cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
         # tracked_img = frame[roiBox[0]:roiBox[0] + roiBox[2], roiBox[1]: roiBox[1] + roiBox[3]]
         tracked_img = frame[roiBox[1]:roiBox[1] + roiBox[3], roiBox[0]:roiBox[0] + roiBox[2]]
-
+        # cv2.imshow("tracked_img",tracked_img)
+        # cv2.waitKey(0)
         hsv_tracked_img = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv_tracked_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
         tracked_roiHist_cam = cv2.calcHist([hsv_tracked_img], [0], mask, [180], [0, 180])
@@ -109,14 +110,16 @@ while True:
 
         kf.correct(get_center_points(pts))
         prediction = kf.predict()
-        if count_frame > 10:
-            corr_x_coord, corr_y_coord, corr_width, corr_height = int(prediction[0] - (0.5 * bbox_width)), \
-                                                                  int(prediction[1] - (0.5 * bbox_height)), \
-                                                                  int(prediction[0] + (0.5 * bbox_width)), \
-                                                                  int(prediction[1] + (0.5 * bbox_height))
+        if count_frame > 30:
+            corr_x_coord, corr_y_coord, corr_width, corr_height = int(prediction[0] - (0.5*bbox_width)), \
+                                                                  int(prediction[1] - (0.5*bbox_height)), \
+                                                                  int(prediction[0] + (0.5*bbox_width)), \
+                                                                  int(prediction[1] + (0.5*bbox_height))
             cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (0, 0, 255), 2)
 
-            kf_corr_img = frame[corr_y_coord: corr_y_coord + corr_height, corr_x_coord: corr_x_coord + corr_width]
+            kf_corr_img = frame[corr_y_coord: corr_height, corr_x_coord: corr_width]
+            # cv2.imshow("kf_corr_img", kf_corr_img)
+            # cv2.waitKey(0)
             hsv_corr_img = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2HSV)
             mask = cv2.inRange(hsv_corr_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
             tracked_roiHist_kf = cv2.calcHist([hsv_corr_img], [0], mask, [180], [0, 180])
@@ -124,6 +127,8 @@ while True:
             # cv2.normalize(tracked_roiHist, tracked_roiHist, 0, 255, cv2.NORM_MINMAX)
             bhattacharyya_dist_kf = cv2.compareHist(roiHist, tracked_roiHist_kf, method=cv2.HISTCMP_BHATTACHARYYA)
             cv2.putText(frame, str(bhattacharyya_dist_kf), (50, 90), font, 1, (0, 0, 255), 1, cv2.LINE_AA)
+        else:
+            bhattacharyya_dist_kf = 0
         # print(prediction)
 
 
