@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from utils import *
 
 selection_in_progress = False
 boxes = []
@@ -40,6 +41,10 @@ cv2.setMouseCallback("tracking", on_mouse, 0)
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 selected = False
 count_frame = 0
+
+bhattacharyya_dist_cam_list = []
+bhattacharyya_dist_kf_list = []
+frame_list = []
 
 kf = cv2.KalmanFilter(4, 2)
 kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
@@ -86,12 +91,10 @@ while True:
         cv2.rectangle(frame, top_left, bottom_right, (255, 0, 0), 2)
 
     if selected:
-        # convert the current frame to the HSV color space
-        # and perform mean shift
+        # convert the current frame to the HSV color space and perform mean shift
         hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         backProj = cv2.calcBackProject([hsv_img], [0], roiHist, [0, 180], 1)
-        # apply cam shift to the back projection, convert the
-        # points to a bounding box, and then draw them
+        # apply cam shift to the back projection, convert the points to a bounding box, and then draw them
         (r, roiBox) = cv2.CamShift(backProj, roiBox, termination)
         count_frame += 1
         bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
@@ -99,11 +102,19 @@ while True:
         cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
         # tracked_img = frame[roiBox[0]:roiBox[0] + roiBox[2], roiBox[1]: roiBox[1] + roiBox[3]]
         tracked_img = frame[roiBox[1]:roiBox[1] + roiBox[3], roiBox[0]:roiBox[0] + roiBox[2]]
+        
+        edges = get_edge_features(tracked_img)
+
         # cv2.imshow("tracked_img",tracked_img)
         # cv2.waitKey(0)
         hsv_tracked_img = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2HSV)
+
         # mask = cv2.inRange(hsv_tracked_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
-        mask = None
+
+        
+        #to avoid false values due to low light, low light values are discarded using cv2.inRange() 
+        mask = cv2.inRange(hsv_tracked_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
+
         tracked_roiHist_cam = cv2.calcHist([hsv_tracked_img], [0], mask, [180], [0, 180])
         tracked_roiHist_cam = cv2.normalize(tracked_roiHist_cam, tracked_roiHist_cam, 0, 255, cv2.NORM_MINMAX)
         # cv2.normalize(tracked_roiHist, tracked_roiHist, 0, 255, cv2.NORM_MINMAX)
@@ -140,6 +151,11 @@ while True:
             corr_x_coord, corr_y_coord, corr_width, corr_height = 0, 0, 0, 0
         # print(prediction)
 
+        bhattacharyya_dist_cam_list.append(bhattacharyya_dist_cam)
+        bhattacharyya_dist_kf_list.append(bhattacharyya_dist_kf)
+        frame_list.append(count_frame)
+        
+        #if full occulsion (bhattacha c. and edges decrease significant, use prediction from kalman)
         if bhattacharyya_dist_cam >= bhattacharyya_dist_kf:
             cv2.polylines(frame, [pts], True, (0, 255, 255), 2)
         elif bhattacharyya_dist_cam < bhattacharyya_dist_kf:
@@ -150,5 +166,12 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+plot_measures(frame_list,bhattacharyya_dist_cam_list, bhattacharyya_dist_kf_list)
+save_list_txt(bhattacharyya_dist_cam_list, "bhattacharyya_dist_cam_list")
+save_list_txt(bhattacharyya_dist_kf_list, "bhattacharyya_dist_kf")
+save_list_txt(frame_list, "frame_list")
+
+
+       
 cam.release()
 cv2.destroyAllWindows()
