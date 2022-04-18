@@ -64,7 +64,8 @@ while True:
         if height > 0 and width > 0:
             selected = True
             hsv_crop = cv2.cvtColor(template, cv2.COLOR_BGR2HSV)
-            mask = cv2.inRange(hsv_crop, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
+            mask = None
+            # mask = cv2.inRange(hsv_crop, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
             roiHist = cv2.calcHist([hsv_crop], [0], mask, [180], [0, 180])
             roiHist = cv2.normalize(roiHist, roiHist, 0, 255, cv2.NORM_MINMAX)
             # cv2.normalize(roiHist, roiHist, 0, 255, cv2.NORM_MINMAX)
@@ -101,7 +102,8 @@ while True:
         # cv2.imshow("tracked_img",tracked_img)
         # cv2.waitKey(0)
         hsv_tracked_img = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv_tracked_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
+        # mask = cv2.inRange(hsv_tracked_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
+        mask = None
         tracked_roiHist_cam = cv2.calcHist([hsv_tracked_img], [0], mask, [180], [0, 180])
         tracked_roiHist_cam = cv2.normalize(tracked_roiHist_cam, tracked_roiHist_cam, 0, 255, cv2.NORM_MINMAX)
         # cv2.normalize(tracked_roiHist, tracked_roiHist, 0, 255, cv2.NORM_MINMAX)
@@ -124,7 +126,8 @@ while True:
             if corr_x_coord in range(0, frame_w) and corr_y_coord in range(0, frame_h) and corr_width in range(0, frame_w) and corr_height in range(0, frame_h):
                 kf_corr_img = frame[corr_y_coord: corr_height, corr_x_coord: corr_width]
                 hsv_corr_img = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2HSV)
-                mask = cv2.inRange(hsv_corr_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
+                # mask = cv2.inRange(hsv_corr_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
+                mask = None
                 tracked_roiHist_kf = cv2.calcHist([hsv_corr_img], [0], mask, [180], [0, 180])
                 tracked_roiHist_kf = cv2.normalize(tracked_roiHist_kf, tracked_roiHist_kf, 0, 255, cv2.NORM_MINMAX)
                 bhattacharyya_dist_kf = cv2.compareHist(roiHist, tracked_roiHist_kf, method=cv2.HISTCMP_BHATTACHARYYA)
