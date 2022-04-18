@@ -1,6 +1,7 @@
 # https://learnopencv.com/edge-detection-using-opencv/
 import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
 def save_list_txt(values,name):
     with open(name+".txt", "w") as output:
@@ -27,8 +28,19 @@ def plot_measures(frames,y,z):
     # Adding legend, which helps us recognize the curve according to it's color
     plt.legend()
     
+    plt.savefig('cam_and_kf_bhattacharyya_dist.png')
     # To load the display window
     plt.show()
+
+def plot_edge_count(frames, y):
+    
+    # Plotting  the curve 
+    plt.plot(frames, y, color='r', label='edge hist')
+    # Naming the x-axis, y-axis and the whole graph
+    plt.xlabel("frames")
+    plt.ylabel("edges count")
+    plt.title("frames and edges ")
+    plt.savefig('edges.png')
 
 def get_edge_features(img):
     """_summary_
@@ -54,19 +66,21 @@ def get_edge_features(img):
     # Blur the image for better edge detection
     img_blur = cv2.GaussianBlur(img_gray, (3,3), 0) 
 
-   
-    
     # Canny Edge Detection
     edges = cv2.Canny(image=img_blur, threshold1=10, threshold2=100) # Canny Edge Detection
     
-    #print(edges)
+    contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
-    return edges
+    #print(contours)
     # Display Canny Edge Detection Image
     # cv2.imshow('Canny Edge Detection', edges)
     # cv2.waitKey(0)
 
     # cv2.destroyAllWindows()
+    #print(edges)
+    
+    return edges, contours
+
 
 
 

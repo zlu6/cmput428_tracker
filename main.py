@@ -45,6 +45,7 @@ count_frame = 0
 bhattacharyya_dist_cam_list =   []
 bhattacharyya_dist_kf_list = []
 frame_list = []
+edge_pixel_count_list =[]
 
 kf = cv2.KalmanFilter(4, 2)
 kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
@@ -102,10 +103,16 @@ while True:
         # tracked_img = frame[roiBox[0]:roiBox[0] + roiBox[2], roiBox[1]: roiBox[1] + roiBox[3]]
         tracked_img = frame[roiBox[1]:roiBox[1] + roiBox[3], roiBox[0]:roiBox[0] + roiBox[2]]
         
-        edges = get_edge_features(tracked_img)
+        decrease_flag = False
+        edges_map, contours = get_edge_features(tracked_img)
+        edge_count = len(contours)
         
-        
-        
+        if len(edge_pixel_count_list) > 3: 
+            if np.abs(edge_count - edge_pixel_count_list[count_frame -3]) > 20:
+                decrease_flag = True
+    
+            
+        edge_pixel_count_list.append(edge_count)
         
     
         # cv2.imshow("tracked_img",tracked_img)
@@ -155,6 +162,9 @@ while True:
         bhattacharyya_dist_kf_list.append(bhattacharyya_dist_kf)
         frame_list.append(count_frame)
         
+        if decrease_flag :
+            print("edge decreased in : " + str(count_frame))
+            
         #if full occulsion (bhattacha c. and edges decrease significant, use prediction from kalman)
         if bhattacharyya_dist_cam >= bhattacharyya_dist_kf:
             cv2.polylines(frame, [pts], True, (0, 255, 255), 2)
@@ -167,9 +177,11 @@ while True:
         break
 
 plot_measures(frame_list,bhattacharyya_dist_cam_list, bhattacharyya_dist_kf_list)
+plot_edge_count(frame_list, edge_pixel_count_list)
 save_list_txt(bhattacharyya_dist_cam_list, "bhattacharyya_dist_cam_list")
 save_list_txt(bhattacharyya_dist_kf_list, "bhattacharyya_dist_kf")
 save_list_txt(frame_list, "frame_list")
+save_list_txt(edge_pixel_count_list, "edge_pixel_count")
 
 
        
