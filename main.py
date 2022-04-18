@@ -42,6 +42,10 @@ termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 selected = False
 count_frame = 0
 
+bhattacharyya_dist_cam_list =   []
+bhattacharyya_dist_kf_list = []
+frame_list = []
+
 kf = cv2.KalmanFilter(4, 2)
 kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
 kf.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
@@ -98,15 +102,12 @@ while True:
         # tracked_img = frame[roiBox[0]:roiBox[0] + roiBox[2], roiBox[1]: roiBox[1] + roiBox[3]]
         tracked_img = frame[roiBox[1]:roiBox[1] + roiBox[3], roiBox[0]:roiBox[0] + roiBox[2]]
         
-        #get_edge_features(tracked_img)
+        edges = get_edge_features(tracked_img)
         
         
         
         
-        
-        
-        
-        
+    
         # cv2.imshow("tracked_img",tracked_img)
         # cv2.waitKey(0)
         hsv_tracked_img = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2HSV)
@@ -148,6 +149,13 @@ while True:
             corr_x_coord, corr_y_coord, corr_width, corr_height = 0, 0, 0, 0
         # print(prediction)
 
+
+
+        bhattacharyya_dist_cam_list.append(bhattacharyya_dist_cam)
+        bhattacharyya_dist_kf_list.append(bhattacharyya_dist_kf)
+        frame_list.append(count_frame)
+        
+        #if full occulsion (bhattacha c. and edges decrease significant, use prediction from kalman)
         if bhattacharyya_dist_cam >= bhattacharyya_dist_kf:
             cv2.polylines(frame, [pts], True, (0, 255, 255), 2)
         elif bhattacharyya_dist_cam < bhattacharyya_dist_kf:
@@ -158,5 +166,12 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+plot_measures(frame_list,bhattacharyya_dist_cam_list, bhattacharyya_dist_kf_list)
+save_list_txt(bhattacharyya_dist_cam_list, "bhattacharyya_dist_cam_list")
+save_list_txt(bhattacharyya_dist_kf_list, "bhattacharyya_dist_kf")
+save_list_txt(frame_list, "frame_list")
+
+
+       
 cam.release()
 cv2.destroyAllWindows()
