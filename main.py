@@ -45,6 +45,7 @@ count_frame = 0
 bhattacharyya_dist_cam_list = []
 bhattacharyya_dist_kf_list = []
 frame_list = []
+edge_pixel_count_list =[]
 
 kf = cv2.KalmanFilter(4, 2)
 kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
@@ -69,8 +70,8 @@ while True:
         if height > 0 and width > 0:
             selected = True
             hsv_crop = cv2.cvtColor(template, cv2.COLOR_BGR2HSV)
-            mask = None
-            # mask = cv2.inRange(hsv_crop, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
+            # mask = None
+            mask = cv2.inRange(hsv_crop, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
             roiHist = cv2.calcHist([hsv_crop], [0], mask, [180], [0, 180])
             roiHist = cv2.normalize(roiHist, roiHist, 0, 255, cv2.NORM_MINMAX)
             # cv2.normalize(roiHist, roiHist, 0, 255, cv2.NORM_MINMAX)
@@ -103,8 +104,20 @@ while True:
         # tracked_img = frame[roiBox[0]:roiBox[0] + roiBox[2], roiBox[1]: roiBox[1] + roiBox[3]]
         tracked_img = frame[roiBox[1]:roiBox[1] + roiBox[3], roiBox[0]:roiBox[0] + roiBox[2]]
         
+
         edges = get_edge_features(tracked_img)
 
+        decrease_flag = False
+        edges_map, contours = get_edge_features(tracked_img)
+        edge_count = len(contours)
+        
+        if len(edge_pixel_count_list) > 3: 
+            if edge_pixel_count_list[-1] - edge_count > 30:
+                decrease_flag = True
+    
+            
+        edge_pixel_count_list.append(edge_count)
+        
         # cv2.imshow("tracked_img",tracked_img)
         # cv2.waitKey(0)
         hsv_tracked_img = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2HSV)
@@ -124,7 +137,7 @@ while True:
 
         kf.correct(get_center_points(pts))
         prediction = kf.predict()
-        if count_frame > 30:
+        if count_frame > 10:
             corr_x_coord, corr_y_coord, corr_width, corr_height = int(prediction[0] - (0.5*bbox_width)), \
                                                                   int(prediction[1] - (0.5*bbox_height)), \
                                                                   int(prediction[0] + (0.5*bbox_width)), \
@@ -137,13 +150,12 @@ while True:
             if corr_x_coord in range(0, frame_w) and corr_y_coord in range(0, frame_h) and corr_width in range(0, frame_w) and corr_height in range(0, frame_h):
                 kf_corr_img = frame[corr_y_coord: corr_height, corr_x_coord: corr_width]
                 hsv_corr_img = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2HSV)
-                # mask = cv2.inRange(hsv_corr_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
-                mask = None
+                mask = cv2.inRange(hsv_corr_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
+                # mask = None
                 tracked_roiHist_kf = cv2.calcHist([hsv_corr_img], [0], mask, [180], [0, 180])
                 tracked_roiHist_kf = cv2.normalize(tracked_roiHist_kf, tracked_roiHist_kf, 0, 255, cv2.NORM_MINMAX)
                 bhattacharyya_dist_kf = cv2.compareHist(roiHist, tracked_roiHist_kf, method=cv2.HISTCMP_BHATTACHARYYA)
-            else:
-                bhattacharyya_dist_kf = 0
+
             cv2.putText(frame, str(bhattacharyya_dist_kf), (50, 90), font, 1, (0, 0, 255), 1, cv2.LINE_AA)
 
         else:
@@ -155,11 +167,17 @@ while True:
         bhattacharyya_dist_kf_list.append(bhattacharyya_dist_kf)
         frame_list.append(count_frame)
         
-        #if full occulsion (bhattacha c. and edges decrease significant, use prediction from kalman)
-        if bhattacharyya_dist_cam >= bhattacharyya_dist_kf:
-            cv2.polylines(frame, [pts], True, (0, 255, 255), 2)
-        elif bhattacharyya_dist_cam < bhattacharyya_dist_kf:
+        if decrease_flag:
+            print("edge decreased in : " + str(count_frame))
             cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (0, 255, 255), 2)
+
+        else:
+            # if full occulsion
+            # (bhattacha c. and edges decrease significant, use prediction from kalman)
+            if bhattacharyya_dist_cam >= bhattacharyya_dist_kf:
+                cv2.polylines(frame, [pts], True, (0, 255, 255), 2)
+            elif bhattacharyya_dist_cam < bhattacharyya_dist_kf:
+                cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (0, 255, 255), 2)
 
 
     cv2.imshow("tracking", frame)
@@ -167,9 +185,11 @@ while True:
         break
 
 plot_measures(frame_list,bhattacharyya_dist_cam_list, bhattacharyya_dist_kf_list)
+plot_edge_count(frame_list, edge_pixel_count_list)
 save_list_txt(bhattacharyya_dist_cam_list, "bhattacharyya_dist_cam_list")
 save_list_txt(bhattacharyya_dist_kf_list, "bhattacharyya_dist_kf")
 save_list_txt(frame_list, "frame_list")
+save_list_txt(edge_pixel_count_list, "edge_pixel_count")
 
 
        
