@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from utils import *
 
 selection_in_progress = False
 boxes = []
@@ -85,12 +86,10 @@ while True:
         cv2.rectangle(frame, top_left, bottom_right, (255, 0, 0), 2)
 
     if selected:
-        # convert the current frame to the HSV color space
-        # and perform mean shift
+        # convert the current frame to the HSV color space and perform mean shift
         hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         backProj = cv2.calcBackProject([hsv_img], [0], roiHist, [0, 180], 1)
-        # apply cam shift to the back projection, convert the
-        # points to a bounding box, and then draw them
+        # apply cam shift to the back projection, convert the points to a bounding box, and then draw them
         (r, roiBox) = cv2.CamShift(backProj, roiBox, termination)
         count_frame += 1
         bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
@@ -98,9 +97,21 @@ while True:
         cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
         # tracked_img = frame[roiBox[0]:roiBox[0] + roiBox[2], roiBox[1]: roiBox[1] + roiBox[3]]
         tracked_img = frame[roiBox[1]:roiBox[1] + roiBox[3], roiBox[0]:roiBox[0] + roiBox[2]]
+        
+        #get_edge_features(tracked_img)
+        
+        
+        
+        
+        
+        
+        
+        
         # cv2.imshow("tracked_img",tracked_img)
         # cv2.waitKey(0)
         hsv_tracked_img = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2HSV)
+        
+        #to avoid false values due to low light, low light values are discarded using cv2.inRange() 
         mask = cv2.inRange(hsv_tracked_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
         tracked_roiHist_cam = cv2.calcHist([hsv_tracked_img], [0], mask, [180], [0, 180])
         tracked_roiHist_cam = cv2.normalize(tracked_roiHist_cam, tracked_roiHist_cam, 0, 255, cv2.NORM_MINMAX)
