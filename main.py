@@ -29,6 +29,8 @@ def on_mouse(event, x, y, flags, params):
         selection_in_progress = False
         boxes.append(ebox)
 
+
+    
 def get_center_points(pts):
     avg_x_coord = np.average(pts[:, 0]).astype(np.float32)
     avg_y_coord = np.average(pts[:, 1]).astype(np.float32)
@@ -115,13 +117,11 @@ while True:
         (r, roiBox) = cv2.CamShift(backProj, roiBox, termination)
         count_frame += 1
         
-        if not occlusion_flag:
-            bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
-        else: 
-            #bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
-            pass
+
+          
         
         pts = np.int0(cv2.boxPoints(r))
+        
         # print(pts)
         # print("--------------------------------------")
         cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
@@ -161,14 +161,19 @@ while True:
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(frame, str(bhattacharyya_dist_cam), (50, 50), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
 
+
         
-        # if occlusion occurs , we use the old estimate
+        
         if not occlusion_flag:
             #update the measurement Matrix in kalman filter
             kf.correct(get_center_points(pts))
+            last_nonOcclusionR = r
+            bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
         else:
+            # if occlusion occurs , we use the old estimate
+            pts = np.int0(cv2.boxPoints(last_nonOcclusionR))
             kf.correct(get_center_points(pts))
-            pass
+            
         
         prediction = kf.predict()
         # print("kf pred x: ", prediction[0] - (0.5*bbox_width), "kf pred y: ", prediction[1]- (0.5*bbox_height))
