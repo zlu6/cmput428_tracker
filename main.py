@@ -1,3 +1,4 @@
+from tkinter import E
 import numpy as np
 import cv2
 from utils import *
@@ -63,7 +64,8 @@ kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
 kf.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
 kf.processNoiseCov = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
                                       np.float32)
-
+# we started from assume no occlusion
+occlusion_flag = False
 
 while True:
     ret, frame = cam.read()
@@ -112,7 +114,13 @@ while True:
         # apply cam shift to the back projection, convert the points to a bounding box, and then draw them
         (r, roiBox) = cv2.CamShift(backProj, roiBox, termination)
         count_frame += 1
-        bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
+        
+        if not occlusion_flag:
+            bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
+        else: 
+            #bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
+            pass
+        
         pts = np.int0(cv2.boxPoints(r))
         # print(pts)
         # print("--------------------------------------")
@@ -120,10 +128,12 @@ while True:
         # tracked_img = frame[roiBox[0]:roiBox[0] + roiBox[2], roiBox[1]: roiBox[1] + roiBox[3]]
         tracked_img = frame[roiBox[1]:roiBox[1] + roiBox[3], roiBox[0]:roiBox[0] + roiBox[2]]
 
+        
+
 
         # edges = get_edge_features(tracked_img)
 
-        decrease_flag = False
+        
         # edges_map, contours = get_edge_features(tracked_img)
         # edge_count = len(contours)
         
@@ -151,14 +161,29 @@ while True:
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(frame, str(bhattacharyya_dist_cam), (50, 50), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
 
-        kf.correct(get_center_points(pts))
+        
+        # if occlusion occurs , we use the old estimate
+        if not occlusion_flag:
+            #update the measurement Matrix in kalman filter
+            kf.correct(get_center_points(pts))
+        else:
+            kf.correct(get_center_points(pts))
+            pass
+        
         prediction = kf.predict()
         # print("kf pred x: ", prediction[0] - (0.5*bbox_width), "kf pred y: ", prediction[1]- (0.5*bbox_height))
+        
+        
+        
+        
+        #if occlusion occurs , we use the old estimate to get new KF prediction 
         if count_frame > 10:
+            
+   
             corr_x_coord, corr_y_coord, corr_width, corr_height = int(prediction[0] - (0.5*bbox_width)), \
-                                                                  int(prediction[1] - (0.5*bbox_height)), \
-                                                                  int(prediction[0] + (0.5*bbox_width)), \
-                                                                  int(prediction[1] + (0.5*bbox_height))
+                                                                    int(prediction[1] - (0.5*bbox_height)), \
+                                                                    int(prediction[0] + (0.5*bbox_width)), \
+                                                                    int(prediction[1] + (0.5*bbox_height))
             cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (0, 0, 255), 2)
 
 
@@ -196,6 +221,10 @@ while True:
 
         if edge_weight < edge_weight_template / 4:
             print("occlusion occurs")
+            occlusion_flag = True
+        else:
+            occlusion_flag = False
+            
     cv2.imshow("tracking", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
