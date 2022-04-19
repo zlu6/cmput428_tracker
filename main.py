@@ -33,6 +33,17 @@ def get_center_points(pts):
     avg_y_coord = np.average(pts[:, 1]).astype(np.float32)
     return np.array([avg_x_coord, avg_y_coord], dtype=np.float32)
 
+def getGradientMagnitude(im):
+    "Get magnitude of gradient for given image"
+    ddepth = cv2.CV_32F
+    dx = cv2.Sobel(im, ddepth, 1, 0)
+    dy = cv2.Sobel(im, ddepth, 0, 1)
+    dxabs = cv2.convertScaleAbs(dx)
+    dyabs = cv2.convertScaleAbs(dy)
+    mag = cv2.addWeighted(dxabs, 0.5, dyabs, 0.5, 0)
+
+    return np.sum(mag)
+
 
 cam = cv2.VideoCapture(0)
 cv2.namedWindow("tracking")
@@ -51,7 +62,8 @@ kf = cv2.KalmanFilter(4, 2)
 kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
 kf.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
 kf.processNoiseCov = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
-                                      np.float32) * 0.03
+                                      np.float32)
+
 
 while True:
     ret, frame = cam.read()
@@ -100,23 +112,25 @@ while True:
         count_frame += 1
         bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
         pts = np.int0(cv2.boxPoints(r))
+        # print(pts)
+        # print("--------------------------------------")
         cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
         # tracked_img = frame[roiBox[0]:roiBox[0] + roiBox[2], roiBox[1]: roiBox[1] + roiBox[3]]
         tracked_img = frame[roiBox[1]:roiBox[1] + roiBox[3], roiBox[0]:roiBox[0] + roiBox[2]]
-        
 
-        edges = get_edge_features(tracked_img)
+
+        # edges = get_edge_features(tracked_img)
 
         decrease_flag = False
-        edges_map, contours = get_edge_features(tracked_img)
-        edge_count = len(contours)
+        # edges_map, contours = get_edge_features(tracked_img)
+        # edge_count = len(contours)
         
-        if len(edge_pixel_count_list) > 3: 
-            if edge_pixel_count_list[-1] - edge_count > 30:
-                decrease_flag = True
-    
-            
-        edge_pixel_count_list.append(edge_count)
+        # if len(edge_pixel_count_list) > 3:
+        #     if edge_pixel_count_list[-1] - edge_count > 30:
+        #         decrease_flag = True
+        #
+        #
+        # edge_pixel_count_list.append(edge_count)
         
         # cv2.imshow("tracked_img",tracked_img)
         # cv2.waitKey(0)
@@ -137,6 +151,7 @@ while True:
 
         kf.correct(get_center_points(pts))
         prediction = kf.predict()
+        # print("kf pred x: ", prediction[0] - (0.5*bbox_width), "kf pred y: ", prediction[1]- (0.5*bbox_height))
         if count_frame > 10:
             corr_x_coord, corr_y_coord, corr_width, corr_height = int(prediction[0] - (0.5*bbox_width)), \
                                                                   int(prediction[1] - (0.5*bbox_height)), \
@@ -167,25 +182,24 @@ while True:
         bhattacharyya_dist_kf_list.append(bhattacharyya_dist_kf)
         frame_list.append(count_frame)
         
-        if decrease_flag:
-            print("edge decreased in : " + str(count_frame))
+
+        if bhattacharyya_dist_cam >= bhattacharyya_dist_kf:
+            cv2.polylines(frame, [pts], True, (0, 255, 255), 2)
+            tracked_img_gray = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2GRAY)
+            edge_weight = getGradientMagnitude(tracked_img_gray)
+        elif bhattacharyya_dist_cam < bhattacharyya_dist_kf:
             cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (0, 255, 255), 2)
+            kalman_img_gray = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2GRAY)
+            edge_weight = getGradientMagnitude(kalman_img_gray)
 
-        else:
-            # if full occulsion
-            # (bhattacha c. and edges decrease significant, use prediction from kalman)
-            if bhattacharyya_dist_cam >= bhattacharyya_dist_kf:
-                cv2.polylines(frame, [pts], True, (0, 255, 255), 2)
-            elif bhattacharyya_dist_cam < bhattacharyya_dist_kf:
-                cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (0, 255, 255), 2)
-
-
+        if edge_weight < 100000:
+            print("occlusion occurs")
     cv2.imshow("tracking", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 plot_measures(frame_list,bhattacharyya_dist_cam_list, bhattacharyya_dist_kf_list)
-plot_edge_count(frame_list, edge_pixel_count_list)
+# plot_edge_count(frame_list, edge_pixel_count_list)
 save_list_txt(bhattacharyya_dist_cam_list, "bhattacharyya_dist_cam_list")
 save_list_txt(bhattacharyya_dist_kf_list, "bhattacharyya_dist_kf")
 save_list_txt(frame_list, "frame_list")
