@@ -79,6 +79,8 @@ while True:
                boxes[0][0]:boxes[1][0]].copy()
         cv2.imshow("template_image", template)
         height, width, channel = template.shape
+        template_img_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+        edge_weight_template = getGradientMagnitude(template_img_gray)
         if height > 0 and width > 0:
             selected = True
             hsv_crop = cv2.cvtColor(template, cv2.COLOR_BGR2HSV)
@@ -192,7 +194,7 @@ while True:
             kalman_img_gray = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2GRAY)
             edge_weight = getGradientMagnitude(kalman_img_gray)
 
-        if edge_weight < 100000:
+        if edge_weight < edge_weight_template / 4:
             print("occlusion occurs")
     cv2.imshow("tracking", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
