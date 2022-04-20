@@ -60,6 +60,7 @@ bhattacharyya_dist_cam_list = []
 bhattacharyya_dist_kf_list = []
 frame_list = []
 edge_pixel_count_list =[]
+slope_list = []
 
 kf = cv2.KalmanFilter(4, 2)
 kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
@@ -117,9 +118,6 @@ while True:
         (r, roiBox) = cv2.CamShift(backProj, roiBox, termination)
         count_frame += 1
         
-
-          
-        
         pts = np.int0(cv2.boxPoints(r))
         
         # print(pts)
@@ -171,8 +169,9 @@ while True:
             bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
         else:
             # if occlusion occurs , we use the old estimate
-            pts = np.int0(cv2.boxPoints(last_nonOcclusionR))
-            kf.correct(get_center_points(pts))
+            # pts = np.int0(cv2.boxPoints(last_nonOcclusionR))
+            # kf.correct(get_center_points(pts))
+            pass
             
         
         prediction = kf.predict()
@@ -213,8 +212,15 @@ while True:
         bhattacharyya_dist_cam_list.append(bhattacharyya_dist_cam)
         bhattacharyya_dist_kf_list.append(bhattacharyya_dist_kf)
         frame_list.append(count_frame)
+        rangeVal = 5
+        if count_frame > 5 :
         
-
+            slope = (bhattacharyya_dist_cam - bhattacharyya_dist_cam_list[count_frame - rangeVal] )/ rangeVal
+        else:
+            slope = 0
+        slope_list.append(slope)
+        #slope become negative, and abs(slope) big
+        
         if bhattacharyya_dist_cam >= bhattacharyya_dist_kf:
             cv2.polylines(frame, [pts], True, (0, 255, 255), 2)
             tracked_img_gray = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2GRAY)
@@ -224,7 +230,7 @@ while True:
             kalman_img_gray = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2GRAY)
             edge_weight = getGradientMagnitude(kalman_img_gray)
 
-        if edge_weight < edge_weight_template / 4:
+        if (edge_weight < edge_weight_template / 1):
             print("occlusion occurs")
             occlusion_flag = True
         else:
@@ -235,7 +241,7 @@ while True:
         break
 
 plot_measures(frame_list,bhattacharyya_dist_cam_list, bhattacharyya_dist_kf_list)
-# plot_edge_count(frame_list, edge_pixel_count_list)
+plot_list_count(frame_list,slope_list, "Frame", "Slope")
 save_list_txt(bhattacharyya_dist_cam_list, "bhattacharyya_dist_cam_list")
 save_list_txt(bhattacharyya_dist_kf_list, "bhattacharyya_dist_kf")
 save_list_txt(frame_list, "frame_list")
