@@ -57,12 +57,14 @@ selected = False
 count_frame = 0
 pred_occluded = None
 
+# recording list 
 bhattacharyya_dist_cam_list = []
 bhattacharyya_dist_kf_list = []
 frame_list = []
 edge_pixel_count_list =[]
 slope_list = []
 
+# CV2 methond
 # kf = cv2.KalmanFilter(4, 2)
 # kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
 # kf.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
@@ -74,6 +76,7 @@ KF = kl.KalmanFilter()
 
 # we started from assume no occlusion
 occlusion_flag = False
+occlusion_start_frame = None
 
 while True:
     ret, frame = cam.read()
@@ -131,9 +134,10 @@ while True:
         # tracked_img = frame[roiBox[0]:roiBox[0] + roiBox[2], roiBox[1]: roiBox[1] + roiBox[3]]
         tracked_img = frame[roiBox[1]:roiBox[1] + roiBox[3], roiBox[0]:roiBox[0] + roiBox[2]]
 
-        # edges = get_edge_features(tracked_img)
-
         
+
+
+        # edges = get_edge_features(tracked_img)
         # edges_map, contours = get_edge_features(tracked_img)
         # edge_count = len(contours)
         
@@ -172,19 +176,20 @@ while True:
             prediction = KF.predict()
             KF.correct(get_center_points(pts))
 
-            # last_nonOcclusionR = get_center_points(pts)
+            last_nonOcclusionR = get_center_points(pts)
             bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
 
         else:
-            print(pred_occluded)
-            pred_occluded = KF.predict()
 
-            KF.correct(pred_occluded)
 
+            # pred_occluded = KF.predict()
+            prediction = KF.predict()
+            # KF.correct(get_center_points(pts))
+            # print(pred_occluded)
             # print("**************************************")
             cv2.circle(frame, (int(pred_occluded[0]), int(pred_occluded[1])), 5, (255, 0, 0), 3)
-            # cv2.imshow("tracked circle", frame)
-            # cv2.waitKey(0)
+            cv2.imshow("tracked circle", frame)
+            cv2.waitKey(500)
 
         # prediction = kf.predict()
 
@@ -197,21 +202,20 @@ while True:
                                                                         int(prediction[1] - (0.5*bbox_height)), \
                                                                         int(prediction[0] + (0.5*bbox_width)), \
                                                                         int(prediction[1] + (0.5*bbox_height))
+
                 # if not occlusion_flag:
                 cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (0, 0, 255), 2)
             else:
-                # print(pred_occluded)
-                corr_x_coord = int(pred_occluded[0] - 0.5 * width)
-                corr_y_coord = int(pred_occluded[1] - 0.5 * height)
-                corr_width = int(corr_x_coord + 0.5*width)
-                corr_height = int(corr_y_coord + 0.5*height)
+
+                corr_x_coord = int(pred_occluded[0] - (0.5*bbox_width))
+                corr_y_coord = int(pred_occluded[1]-(0.5*bbox_height))
+                corr_width = int(corr_x_coord + (0.5 * bbox_width))
+                corr_height = int(corr_y_coord + (0.5 * bbox_height))
                 # print(corr_x_coord)
                 # print(corr_y_coord)
                 # print(corr_width)
                 # print(corr_height)
                 # print("------------------------------------------------")
-                cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (255, 255, 255), 2)
-                # cv2.circle(frame, (int(corr_x_coord), int(corr_y_coord)), 5, (255, 255, 255), 3)
 
                 # cv2.circle(frame, (corr_x_coord, corr_y_coord), 2, (0, 0, 255), -1)
 
@@ -256,18 +260,37 @@ while True:
             kalman_img_gray = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2GRAY)
             edge_weight = getGradientMagnitude(kalman_img_gray)
 
-        if edge_weight < edge_weight_template:
-            # print("occlusion occurs")
-            cv2.putText(frame, "occlusion occurs", (50, 100), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
+        # if edge_weight < edge_weight_template / 2:
+        #     # print("occlusion occurs")
+        #     cv2.putText(frame, "occlusion occurs", (50, 100), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
 
-        # if (edge_weight < edge_weight_template / 1) and (slope < -0.02):
-        #     print("occlusion occurs")
-        #
-            occlusion_flag = True
-        #     # bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
+        # if edges and Bhattacharyya value changes a lot, means occlusion occurs
+        if (edge_weight < edge_weight_template / 1) and (slope < -0.02):
+            print("occlusion occurs")
+            cv2.putText(frame, "occlusion occurs", (50, 100), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
+            
+            # if not occlusion yet
+            if not occlusion_flag :
+                occlusion_flag = True
+                occlusion_start_frame = count_frame
+            #if this a consquence occlusion
+            else :
+               
+                
+                # if occlusion lasting longer than 1 second, 30 frames;
+                # we need to change to non-occlusion case, in order to make sure KF tracker wont give wrong result
+                if (count_frame  - occlusion_start_frame) > 30:
+                    print("occlusion too long" )
+                    occlusion_flag = False
+                    occlusion_start_frame = None
+                else :
+                    occlusion_flag = True
+            
+            # bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
             pred_occluded = np.array([(corr_x_coord+corr_width) // 2, (corr_y_coord + corr_height) // 2], dtype=np.float32)
         else:
             occlusion_flag = False
+            occlusion_start_frame = None
 
 
             
