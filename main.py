@@ -230,7 +230,7 @@ while True:
             kalman_img_gray = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2GRAY)
             edge_weight = getGradientMagnitude(kalman_img_gray)
 
-        if (edge_weight < edge_weight_template / 1):
+        if (edge_weight < edge_weight_template / 1) and (slope < -0.02):
             print("occlusion occurs")
             occlusion_flag = True
         else:
