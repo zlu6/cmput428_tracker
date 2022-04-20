@@ -266,7 +266,7 @@ while True:
 
         # if edges and Bhattacharyya value changes a lot, means occlusion occurs
         if (edge_weight < edge_weight_template / 1) and (slope < -0.02):
-            print("occlusion occurs")
+            print("occlusion occurs at frame ", count_frame, "and occlusion start at ", occlusion_start_frame)
             cv2.putText(frame, "occlusion occurs", (50, 100), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
             
             # if not occlusion yet
@@ -274,12 +274,10 @@ while True:
                 occlusion_flag = True
                 occlusion_start_frame = count_frame
             #if this a consquence occlusion
-            else :
-               
-                
+            else :  
                 # if occlusion lasting longer than 1 second, 30 frames;
                 # we need to change to non-occlusion case, in order to make sure KF tracker wont give wrong result
-                if (count_frame  - occlusion_start_frame) > 30:
+                if (count_frame  - occlusion_start_frame) > 4:
                     print("occlusion too long" )
                     occlusion_flag = False
                     occlusion_start_frame = None
