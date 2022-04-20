@@ -182,14 +182,18 @@ while True:
         else:
 
 
-            # pred_occluded = KF.predict()
-            prediction = KF.predict()
+            pred_occluded = KF.predict()
+            KF.correct(pred_occluded)
+            
+            
+            #prediction = KF.predict()
             # KF.correct(get_center_points(pts))
             # print(pred_occluded)
             # print("**************************************")
-            cv2.circle(frame, (int(pred_occluded[0]), int(pred_occluded[1])), 5, (255, 0, 0), 3)
-            cv2.imshow("tracked circle", frame)
-            cv2.waitKey(500)
+            
+            # cv2.circle(frame, (int(pred_occluded[0]), int(pred_occluded[1])), 5, (255, 0, 0), 3)
+            # cv2.imshow("tracked circle", frame)
+            # cv2.waitKey(500)
 
         # prediction = kf.predict()
 
@@ -207,10 +211,20 @@ while True:
                 cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (0, 0, 255), 2)
             else:
 
-                corr_x_coord = int(pred_occluded[0] - (0.5*bbox_width))
-                corr_y_coord = int(pred_occluded[1]-(0.5*bbox_height))
-                corr_width = int(corr_x_coord + (0.5 * bbox_width))
-                corr_height = int(corr_y_coord + (0.5 * bbox_height))
+                corr_x_coord = int(pred_occluded[0] - 0.5 * width)
+                corr_y_coord = int(pred_occluded[1]- 0.5 * height)
+                corr_width = int(corr_x_coord + 0.5 * width)
+                corr_height = int(corr_y_coord + 0.5 * height)
+                # print(corr_x_coord)
+                # print(corr_y_coord)
+                # print(corr_width)
+                # print(corr_height)
+                # print("------------------------------------------------")
+                cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (255, 255, 255), 2)
+
+                
+                
+                
                 # print(corr_x_coord)
                 # print(corr_y_coord)
                 # print(corr_width)
@@ -271,13 +285,14 @@ while True:
             
             # if not occlusion yet
             if not occlusion_flag :
+                print(" occlusion started")
                 occlusion_flag = True
                 occlusion_start_frame = count_frame
             #if this a consquence occlusion
             else :  
                 # if occlusion lasting longer than 4/30 second, 4 frames;
                 # we need to change to non-occlusion case, in order to make sure KF tracker wont give wrong result
-                if (count_frame  - occlusion_start_frame) > 4:
+                if (count_frame  - occlusion_start_frame) > 10:
                     print("occlusion too long" )
                     occlusion_flag = False
                     occlusion_start_frame = None

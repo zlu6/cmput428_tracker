@@ -19,7 +19,7 @@ class KalmanFilter(object):
         super(KalmanFilter, self).__init__()
         self.method = method
         self.stateVariance = stateVariance
-        self.measurementVariance 
+        self.measurementVariance = measurementVariance
         self.dt = dt
         self.initModel()
 
