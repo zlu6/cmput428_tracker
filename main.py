@@ -60,6 +60,7 @@ bhattacharyya_dist_cam_list = []
 bhattacharyya_dist_kf_list = []
 frame_list = []
 edge_pixel_count_list =[]
+slope_list = []
 
 kf = cv2.KalmanFilter(4, 2)
 kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
@@ -117,9 +118,6 @@ while True:
         (r, roiBox) = cv2.CamShift(backProj, roiBox, termination)
         count_frame += 1
         
-
-          
-        
         pts = np.int0(cv2.boxPoints(r))
         
         # print(pts)
@@ -173,11 +171,10 @@ while True:
         else:
             # if occlusion occurs , we use the old estimate
 
+
             # racked_points = get_center_points(pts)
             # kf.correct(pred_occluded)
 
-            kf.statePre(int(pred_occluded[0]))
-            kf.statePre(int(pred_occluded[1]))
             pred_occluded = kf.predict()
             # print(pred_occluded)
             # print("**************************************")
@@ -185,11 +182,8 @@ while True:
             cv2.imshow("tracked circle", frame)
             cv2.waitKey(0)
 
+        prediction = kf.predict()
 
-
-        # kf.correct(get_center_points(pts))
-        # prediction = kf.predict()
-        # prediction = kf.predict()
         # print("kf pred x: ", prediction[0] - (0.5*bbox_width), "kf pred y: ", prediction[1]- (0.5*bbox_height))
         #if occlusion occurs , we use the old estimate to get new KF prediction 
         if count_frame > 10:
@@ -239,6 +233,14 @@ while True:
         bhattacharyya_dist_kf_list.append(bhattacharyya_dist_kf)
         frame_list.append(count_frame)
 
+        rangeVal = 5
+        if count_frame > 5 :
+        
+            slope = (bhattacharyya_dist_cam - bhattacharyya_dist_cam_list[count_frame - rangeVal] )/ rangeVal
+        else:
+            slope = 0
+        slope_list.append(slope)
+
         if bhattacharyya_dist_cam >= bhattacharyya_dist_kf:
             cv2.polylines(frame, [pts], True, (0, 255, 255), 2)
             tracked_img_gray = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2GRAY)
@@ -251,6 +253,10 @@ while True:
         if edge_weight < edge_weight_template / 2:
             # print("occlusion occurs")
             cv2.putText(frame, "occlusion occurs", (50, 100), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
+
+        if (edge_weight < edge_weight_template / 1) and (slope < -0.02):
+            print("occlusion occurs")
+
             occlusion_flag = True
             # bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
             pred_occluded = np.array([(corr_x_coord+corr_width) // 2, (corr_y_coord + corr_height) // 2], dtype=np.float32)
@@ -264,7 +270,7 @@ while True:
         break
 
 plot_measures(frame_list,bhattacharyya_dist_cam_list, bhattacharyya_dist_kf_list)
-# plot_edge_count(frame_list, edge_pixel_count_list)
+plot_list_count(frame_list,slope_list, "Frame", "Slope")
 save_list_txt(bhattacharyya_dist_cam_list, "bhattacharyya_dist_cam_list")
 save_list_txt(bhattacharyya_dist_kf_list, "bhattacharyya_dist_kf")
 save_list_txt(frame_list, "frame_list")

@@ -32,15 +32,15 @@ def plot_measures(frames,y,z):
     # To load the display window
     plt.show()
 
-# def plot_edge_count(frames, y):
-#
-#     # Plotting  the curve
-#     plt.plot(frames, y, color='r', label='edge hist')
-#     # Naming the x-axis, y-axis and the whole graph
-#     plt.xlabel("frames")
-#     plt.ylabel("edges count")
-#     plt.title("frames and edges ")
-#     plt.savefig('edges.png')
+def plot_list_count(x, y,Xname,Yname):
+
+    # Plotting  the curve
+    plt.plot(x, y, color='r', label=Xname+Yname+' hist')
+    # Naming the x-axis, y-axis and the whole graph
+    plt.xlabel(Xname)
+    plt.ylabel(Yname)
+    plt.title(Xname+"And"+Yname)
+    plt.savefig(Xname+"And"+Yname+'.png')
 
 def get_edge_features(img):
     """_summary_
