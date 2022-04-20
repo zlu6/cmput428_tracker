@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from utils import *
+import kalman as kl
 
 selection_in_progress = False
 boxes = []
@@ -62,11 +63,15 @@ frame_list = []
 edge_pixel_count_list =[]
 slope_list = []
 
-kf = cv2.KalmanFilter(4, 2)
-kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
-kf.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
-kf.processNoiseCov = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
-                                       np.float32)
+# kf = cv2.KalmanFilter(4, 2)
+# kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
+# kf.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
+# kf.processNoiseCov = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+# np.float32)
+
+KF = kl.KalmanFilter()
+
+
 # we started from assume no occlusion
 occlusion_flag = False
 
@@ -163,26 +168,29 @@ while True:
         if not occlusion_flag:
 
             #update the measurement Matrix in kalman filter
-            kf.correct(get_center_points(pts))
-            prediction = kf.predict()
+            # kf.correct(get_center_points(pts))
+            # prediction = kf.predict()
+            # last_nonOcclusionR = get_center_points(pts)
+            # bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
+            prediction = KF.predict()
+            KF.correct(get_center_points(pts))
+
             last_nonOcclusionR = get_center_points(pts)
             bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
 
         else:
-            # if occlusion occurs , we use the old estimate
 
 
-            # racked_points = get_center_points(pts)
-            # kf.correct(pred_occluded)
-
-            pred_occluded = kf.predict()
+            # pred_occluded = KF.predict()
+            prediction = KF.predict()
+            # KF.correct(get_center_points(pts))
             # print(pred_occluded)
             # print("**************************************")
-            cv2.circle(frame, (int(pred_occluded[0]), int(pred_occluded[1])), 5, (255, 0, 0), 2)
+            cv2.circle(frame, (int(pred_occluded[0]), int(pred_occluded[1])), 5, (255, 0, 0), 3)
             cv2.imshow("tracked circle", frame)
             cv2.waitKey(0)
 
-        prediction = kf.predict()
+        # prediction = kf.predict()
 
         # print("kf pred x: ", prediction[0] - (0.5*bbox_width), "kf pred y: ", prediction[1]- (0.5*bbox_height))
         #if occlusion occurs , we use the old estimate to get new KF prediction 
@@ -193,6 +201,9 @@ while True:
                                                                         int(prediction[1] - (0.5*bbox_height)), \
                                                                         int(prediction[0] + (0.5*bbox_width)), \
                                                                         int(prediction[1] + (0.5*bbox_height))
+
+
+
                 # if not occlusion_flag:
                 cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (0, 0, 255), 2)
             else:
