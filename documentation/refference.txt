@@ -1,2 +1,4 @@
 https://www.geeksforgeeks.org/track-objects-with-camshift-using-opencv/
 https://learnopencv.com/edge-detection-using-opencv/
+https://iitmcvg.github.io/summer_school/Session4/
+https://gist.github.com/yjxiong/ecaca3c28fd71ba75fe5fd46756a1e9d

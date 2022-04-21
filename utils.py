@@ -6,6 +6,22 @@ import numpy as np
 def save_list_txt(values,name):
     with open(name+".txt", "w") as output:
         output.write(str(values))
+        
+def get_center_points(pts):
+    avg_x_coord = np.average(pts[:, 0]).astype(np.float32)
+    avg_y_coord = np.average(pts[:, 1]).astype(np.float32)
+    return np.array([avg_x_coord, avg_y_coord], dtype=np.float32)
+
+def getGradientMagnitude(im):
+    "Get magnitude of gradient for given image"
+    ddepth = cv2.CV_32F
+    dx = cv2.Sobel(im, ddepth, 1, 0)
+    dy = cv2.Sobel(im, ddepth, 0, 1)
+    dxabs = cv2.convertScaleAbs(dx)
+    dyabs = cv2.convertScaleAbs(dy)
+    mag = cv2.addWeighted(dxabs, 0.5, dyabs, 0.5, 0)
+
+    return np.sum(mag)
 
 
 def plot_measures(frames,y,z):
