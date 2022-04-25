@@ -1,6 +1,9 @@
 import numpy as np
 import cv2 as cv
 import argparse
+
+# Our baseline comparison against Opencv shifting
+
 # parser = argparse.ArgumentParser(description='This sample demonstrates the meanshift algorithm. \
 #                                               The example file can be downloaded from: \
 #                                               https://www.bogotobogo.com/python/OpenCV_Python/images/mean_shift_tracking/slow_traffic_small.mp4')

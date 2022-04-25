@@ -69,8 +69,7 @@ if __name__ == '__main__' :
 
         if (len(cv2_roi) > 1) :
             template = frame[y:y+h,x:x+w].copy()
-            #cv2.imshow("template_image", template)
-            
+
             template_img_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
             edge_weight_template = getGradientMagnitude(template_img_gray)
             if h > 0 and w > 0:
@@ -131,11 +130,8 @@ if __name__ == '__main__' :
 
             if not occlusion_flag:
 
-                #update the measurement Matrix in kalman filter
-                # kf.correct(get_center_points(pts))
-                # prediction = kf.predict()
-                # last_nonOcclusionR = get_center_points(pts)
-                # bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
+                #update the measurement Matrix in kalman filter                
+                
                 prediction = KF.predict()
                 KF.correct(get_center_points(pts))
 
@@ -149,18 +145,9 @@ if __name__ == '__main__' :
                 KF.correct(pred_occluded)
                 
                 
-                #prediction = KF.predict()
-                # KF.correct(get_center_points(pts))
-                # print(pred_occluded)
-                # print("**************************************")
-                
-                # cv2.circle(frame, (int(pred_occluded[0]), int(pred_occluded[1])), 5, (255, 0, 0), 3)
-                # cv2.imshow("tracked circle", frame)
-                # cv2.waitKey(500)
 
-            # prediction = kf.predict()
 
-            # print("kf pred x: ", prediction[0] - (0.5*bbox_width), "kf pred y: ", prediction[1]- (0.5*bbox_height))
+
             #if occlusion occurs , we use the old estimate to get new KF prediction 
             if (count_frame>5) :
                 
@@ -178,28 +165,11 @@ if __name__ == '__main__' :
                     corr_y_coord = int(pred_occluded[1]- 0.5 * h)
                     corr_width = int(corr_x_coord + 0.5 * w)
                     corr_height = int(corr_y_coord + 0.5 * h)
-                    # print(corr_x_coord)
-                    # print(corr_y_coord)
-                    # print(corr_width)
-                    # print(corr_height)
-                    # print("------------------------------------------------")
+
                     cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (255, 255, 255), 2)
 
                     
                     
-                    
-                    # print(corr_x_coord)
-                    # print(corr_y_coord)
-                    # print(corr_width)
-                    # print(corr_height)
-                    # print("------------------------------------------------")
-
-                    # cv2.circle(frame, (corr_x_coord, corr_y_coord), 2, (0, 0, 255), -1)
-
-
-
-                # cv2.imshow("kf_corr_img", kf_corr_img)
-                # cv2.waitKey(0)
                 if corr_x_coord in range(0, frame_w) and corr_y_coord in range(0, frame_h) and corr_width in range(0, frame_w) and corr_height in range(0, frame_h):
                     kf_corr_img = frame[corr_y_coord: corr_height, corr_x_coord: corr_width]
                     hsv_corr_img = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2HSV)
@@ -237,10 +207,7 @@ if __name__ == '__main__' :
                 kalman_img_gray = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2GRAY)
                 edge_weight = getGradientMagnitude(kalman_img_gray)
 
-            # if edge_weight < edge_weight_template / 2:
-            #     # print("occlusion occurs")
-            #     cv2.putText(frame, "occlusion occurs", (50, 100), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
-
+   
             # if edges and Bhattacharyya value changes a lot, means occlusion occurs
             if (edge_weight < edge_weight_template / 1) and (slope < -0.02):
                 print("occlusion occurs at frame ", count_frame, "and occlusion start at ", occlusion_start_frame)
