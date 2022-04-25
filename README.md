@@ -3,7 +3,8 @@
 Camshift + KF + Edge histgram detection
 We acknowledge the orginal idea from paper 
 
-I. Iraei and K. Faez, "Object tracking with occlusion handling using mean shift, Kalman filter and Edge Histogram," 2015 2nd International Conference on Pattern Recognition and Image Analysis (IPRIA), 2015, pp. 1-6, doi: 10.1109/PRIA.2015.7161637.
+I. Iraei and K. Faez, "Object tracking with occlusion handling using mean shift, Kalman filter and Edge Histogram," 2015 2nd International Conference on 
+Pattern Recognition and Image Analysis (IPRIA), 2015, pp. 1-6, doi: 10.1109/PRIA.2015.7161637.
 
 
 Edge detection : Sobel filter
