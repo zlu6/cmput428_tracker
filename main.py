@@ -32,6 +32,14 @@ def on_mouse(event, x, y, flags, params):
 
     
 def get_center_points(pts):
+    """generate tne center points, based on the 4 coordinates of the box
+
+    Args:
+        pts (_type_): 4 tracked point
+
+    Returns:
+        np array: center point
+    """
     avg_x_coord = np.average(pts[:, 0]).astype(np.float32)
     avg_y_coord = np.average(pts[:, 1]).astype(np.float32)
     return np.array([avg_x_coord, avg_y_coord], dtype=np.float32)
@@ -50,6 +58,7 @@ def getGradientMagnitude(im):
 
 cam = cv2.VideoCapture(0)
 cv2.namedWindow("tracking")
+
 # setup the mouse callback
 cv2.setMouseCallback("tracking", on_mouse, 0)
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
@@ -70,6 +79,7 @@ slope_list = []
 # kf.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
 # kf.processNoiseCov = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
 # np.float32)
+
 
 KF = kl.KalmanFilter()
 
@@ -97,11 +107,14 @@ while True:
         if height > 0 and width > 0:
             selected = True
             hsv_crop = cv2.cvtColor(template, cv2.COLOR_BGR2HSV)
+            
+            # as a comparison
             # mask = None
             mask = cv2.inRange(hsv_crop, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
             roiHist = cv2.calcHist([hsv_crop], [0], mask, [180], [0, 180])
             roiHist = cv2.normalize(roiHist, roiHist, 0, 255, cv2.NORM_MINMAX)
-            # cv2.normalize(roiHist, roiHist, 0, 255, cv2.NORM_MINMAX)
+
+            
             roiBox = (
                 boxes[0][0],
                 boxes[0][1],
@@ -127,32 +140,21 @@ while True:
         count_frame += 1
         
         pts = np.int0(cv2.boxPoints(r))
-        
-        # print(pts)
-        # print("--------------------------------------")
+
         cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
-        # tracked_img = frame[roiBox[0]:roiBox[0] + roiBox[2], roiBox[1]: roiBox[1] + roiBox[3]]
         tracked_img = frame[roiBox[1]:roiBox[1] + roiBox[3], roiBox[0]:roiBox[0] + roiBox[2]]
 
         
 
-
+        # uncomment the following line to generate the edges graph
+        
         # edges = get_edge_features(tracked_img)
         # edges_map, contours = get_edge_features(tracked_img)
         # edge_count = len(contours)
-        
-        # if len(edge_pixel_count_list) > 3:
-        #     if edge_pixel_count_list[-1] - edge_count > 30:
-        #         decrease_flag = True
-        #
-        #
         # edge_pixel_count_list.append(edge_count)
         
-        # cv2.imshow("tracked_img",tracked_img)
-        # cv2.waitKey(0)
-        hsv_tracked_img = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2HSV)
 
-        # mask = cv2.inRange(hsv_tracked_img, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
+        hsv_tracked_img = cv2.cvtColor(tracked_img, cv2.COLOR_BGR2HSV)
 
         
         #to avoid false values due to low light, low light values are discarded using cv2.inRange() 
@@ -160,7 +162,7 @@ while True:
 
         tracked_roiHist_cam = cv2.calcHist([hsv_tracked_img], [0], mask, [180], [0, 180])
         tracked_roiHist_cam = cv2.normalize(tracked_roiHist_cam, tracked_roiHist_cam, 0, 255, cv2.NORM_MINMAX)
-        # cv2.normalize(tracked_roiHist, tracked_roiHist, 0, 255, cv2.NORM_MINMAX)
+
         bhattacharyya_dist_cam = cv2.compareHist(roiHist, tracked_roiHist_cam, method=cv2.HISTCMP_BHATTACHARYYA)
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(frame, str(bhattacharyya_dist_cam), (50, 50), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
@@ -168,11 +170,12 @@ while True:
 
         if not occlusion_flag:
 
-            #update the measurement Matrix in kalman filter
+            #update the measurement Matrix in kalman filter use CV method
             # kf.correct(get_center_points(pts))
             # prediction = kf.predict()
             # last_nonOcclusionR = get_center_points(pts)
             # bbox_x_coord, bbox_y_coord, bbox_width, bbox_height = roiBox
+            
             prediction = KF.predict()
             KF.correct(get_center_points(pts))
 
@@ -187,17 +190,14 @@ while True:
             
             
             #prediction = KF.predict()
-            # KF.correct(get_center_points(pts))
-            # print(pred_occluded)
-            # print("**************************************")
-            
+   
+            # uncomment the below to show
             # cv2.circle(frame, (int(pred_occluded[0]), int(pred_occluded[1])), 5, (255, 0, 0), 3)
             # cv2.imshow("tracked circle", frame)
             # cv2.waitKey(500)
-
         # prediction = kf.predict()
 
-        # print("kf pred x: ", prediction[0] - (0.5*bbox_width), "kf pred y: ", prediction[1]- (0.5*bbox_height))
+
         #if occlusion occurs , we use the old estimate to get new KF prediction 
         if count_frame > 10:
             
@@ -215,28 +215,9 @@ while True:
                 corr_y_coord = int(pred_occluded[1]- 0.5 * height)
                 corr_width = int(corr_x_coord + 0.5 * width)
                 corr_height = int(corr_y_coord + 0.5 * height)
-                # print(corr_x_coord)
-                # print(corr_y_coord)
-                # print(corr_width)
-                # print(corr_height)
-                # print("------------------------------------------------")
+
                 cv2.rectangle(frame, (corr_x_coord, corr_y_coord), (corr_width, corr_height), (255, 255, 255), 2)
 
-                
-                
-                
-                # print(corr_x_coord)
-                # print(corr_y_coord)
-                # print(corr_width)
-                # print(corr_height)
-                # print("------------------------------------------------")
-
-                # cv2.circle(frame, (corr_x_coord, corr_y_coord), 2, (0, 0, 255), -1)
-
-
-
-            # cv2.imshow("kf_corr_img", kf_corr_img)
-            # cv2.waitKey(0)
             if corr_x_coord in range(0, frame_w) and corr_y_coord in range(0, frame_h) and corr_width in range(0, frame_w) and corr_height in range(0, frame_h):
                 kf_corr_img = frame[corr_y_coord: corr_height, corr_x_coord: corr_width]
                 hsv_corr_img = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2HSV)
@@ -251,7 +232,6 @@ while True:
         else:
             bhattacharyya_dist_kf = 0
             corr_x_coord, corr_y_coord, corr_width, corr_height = 0, 0, 0, 0
-        # print(prediction)
 
         bhattacharyya_dist_cam_list.append(bhattacharyya_dist_cam)
         bhattacharyya_dist_kf_list.append(bhattacharyya_dist_kf)
@@ -274,9 +254,7 @@ while True:
             kalman_img_gray = cv2.cvtColor(kf_corr_img, cv2.COLOR_BGR2GRAY)
             edge_weight = getGradientMagnitude(kalman_img_gray)
 
-        # if edge_weight < edge_weight_template / 2:
-        #     # print("occlusion occurs")
-        #     cv2.putText(frame, "occlusion occurs", (50, 100), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
+
 
         # if edges and Bhattacharyya value changes a lot, means occlusion occurs
         if (edge_weight < edge_weight_template / 1) and (slope < -0.02):

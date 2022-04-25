@@ -87,13 +87,7 @@ def get_edge_features(img):
     
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
-    #print(contours)
-    # Display Canny Edge Detection Image
-    # cv2.imshow('Canny Edge Detection', edges)
-    # cv2.waitKey(0)
 
-    # cv2.destroyAllWindows()
-    #print(edges)
     
     return edges, contours
 
