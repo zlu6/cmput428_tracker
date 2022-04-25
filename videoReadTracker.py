@@ -12,7 +12,7 @@ current_mouse_position = np.ones(2, dtype=np.int32)
 
 
 if __name__ == '__main__' :
-    cap = cv2.VideoCapture('dataSet/jogging00.mp4')
+    cap = cv2.VideoCapture('dataSet/dribbleBasketball00.mp4')
     
     cap.set(cv2.CAP_PROP_FPS, 120)
     cv2.namedWindow("tracking")

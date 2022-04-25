@@ -1,20 +1,27 @@
-#################### Import Section of the code #############################
+
 """
-reference: https://github.com/mabhisharma/Multi-Object-Tracking-with-Kalman-Filter/blob/master/kalmanFilter.py
+code reference: 
+https://medium.com/@jaems33/understanding-kalman-filters-with-python-2310e87b8f48
+https://github.com/mabhisharma/Multi-Object-Tracking-with-Kalman-Filter/blob/master/kalmanFilter.py
 """
-try:
-    import numpy as np
-except Exception as e:
-    print(e, "\nPlease Install the package")
+
+import numpy as np
 
 
-#################### Import Section ends here ################################
 
 
+
+"""K.F
+Kalman Filter in matrix notation, class
+Simply conclusion:
+    mitigate the uncertainty by combining the information we do have with a distribution that we feel more confident in.
+"""
 class KalmanFilter(object):
-    """docstring for KalmanFilter"""
-
-    def __init__(self, dt=1, stateVariance=1, measurementVariance=1,
+    
+    """
+    default parameters that you could set
+    """
+    def __init__(self, dt=1, stateVariance=50, measurementVariance=50,
                  method="Velocity"):
         super(KalmanFilter, self).__init__()
         self.method = method
@@ -37,34 +44,71 @@ class KalmanFilter(object):
                             [self.dt]])
 
         self.H = np.matrix([[1, 0, 0, 0], [0, 0, 1, 0]])
+        
+        # Covariance matrix
         self.P = np.matrix(self.stateVariance * np.identity(self.A.shape[0]))
         self.R = np.matrix(self.measurementVariance * np.identity(
             self.H.shape[0]))
 
+        # error terms
         self.Q = np.matrix([[self.dt ** 4 / 4, self.dt ** 3 / 2, 0, 0],
                             [self.dt ** 3 / 2, self.dt ** 2, 0, 0],
                             [0, 0, self.dt ** 4 / 4, self.dt ** 3 / 2],
                             [0, 0, self.dt ** 3 / 2, self.dt ** 2]])
+        #error terms
+        self.W = np.matrix([[self.dt ** 4 / 4, self.dt ** 3 / 2, 0, 0],
+                            [self.dt ** 3 / 2, self.dt ** 2, 0, 0],
+                            [0, 0, self.dt ** 4 / 4, self.dt ** 3 / 2],
+                            [0, 0, self.dt ** 3 / 2, self.dt ** 2]])
+        
+        # error covariance matrix, which is P_t, p at previous state
+        # at first iteration, current state is previous state
+        self.P_t = self.P
+        
+        # X means the state matrix 
+        self.X = np.matrix([[0], [1], [0], [1]])
 
-        self.erroCov = self.P
-        self.state = np.matrix([[0], [1], [0], [1]])
-
-    """Predict function which predicst next state based on previous state"""
+    
 
     def predict(self):
-        self.predictedState = self.A * self.state + self.B * self.U
-        self.predictedErrorCov = self.A * self.erroCov * self.A.T + self.Q
-        temp = np.asarray(self.predictedState)
-        # return temp[0], temp[2]
-        return temp[0]
+        """small p represent the matrix has been update with a new pridiction
+        """
+        
+        # predicted State
+        self.X_p_t = self.A * self.X  + self.B * self.U 
+        #the pridicted error Co-variance
+        self.P_p_t = self.A * self.P_t * self.A.T + self.Q
+    
+        # return np.asarray(self.X_p_t)[0], np.asarray(self.X_p_t)[2]
+        return np.asarray(self.X_p_t)[0]
 
-    """Correct function which correct the states based on measurements"""
+   
 
-    def correct(self, currentMeasurement):
-        self.kalmanGain = self.predictedErrorCov * self.H.T * np.linalg.pinv(
-            self.H * self.predictedErrorCov * self.H.T + self.R)
-        self.state = self.predictedState + self.kalmanGain * (currentMeasurement
-                                                              - (self.H * self.predictedState))
+    def kalmanGain(self):
+        # we use persudo inverse since inverse would be more accurate
+        self.K = self.P_p_t * self.H.T * np.linalg.pinv(
+            self.H * self.P_p_t * self.H.T + self.R)
+        
+        # we assume there all white noise,  as paper state thus we wont do;
+        # i.e no error in the measurement
+        #Y_t = C * Y_t_m + Z_m
+        
+    def update(self,Y):
+        """update the Process and state matrix
 
-        self.erroCov = (np.identity(self.P.shape[0]) -
-                        self.kalmanGain * self.H) * self.predictedErrorCov
+        Args:
+            Y (_type_): current measurement
+        """
+                
+        self.X  = self.X_p_t + self.K * (Y - (self.H * self.X_p_t))
+
+        self.P_t = (np.identity(self.P.shape[0]) -
+                        self.K * self.H) * self.P_p_t
+
+    def correct(self, Y):
+        
+        """correct the state based on historical data,
+            Y is the current measurement
+        """
+        self.kalmanGain()
+        self.update(Y)
