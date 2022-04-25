@@ -37,6 +37,8 @@ class KalmanFilter(object):
             self.U = 1
         else:
             self.U = 0
+            
+        # the deafult values below based on the orginal papers idea
         self.A = np.matrix([[1, self.dt, 0, 0], [0, 1, 0, 0],
                             [0, 0, 1, self.dt], [0, 0, 0, 1]])
 
@@ -71,7 +73,13 @@ class KalmanFilter(object):
     
 
     def predict(self):
-        """small p represent the matrix has been update with a new pridiction
+        """small p represent the matrix has been update with a new pridiction,
+            we could add error term w in pridicted state
+            
+            Matrix A (state transition) update X and P based upon the time that has elapsed
+            
+            Matrix B applies the acceleration(u) to provide the vlaues to update the position
+            and velocity of AX
         """
         
         # predicted State
@@ -85,6 +93,14 @@ class KalmanFilter(object):
    
 
     def kalmanGain(self):
+        
+        """update Kalman gain
+        H matrix helps transform the matrix format of P into the format desierd for K matrix
+        
+        Y is the matrix contains the measurement data, we could update here
+        C is a matrix transform to allowed it be summed with Z
+        Z is the error term of the measurement
+        """
         # we use persudo inverse since inverse would be more accurate
         self.K = self.P_p_t * self.H.T * np.linalg.pinv(
             self.H * self.P_p_t * self.H.T + self.R)
