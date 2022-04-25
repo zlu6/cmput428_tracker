@@ -8,6 +8,14 @@ def save_list_txt(values,name):
         output.write(str(values))
         
 def get_center_points(pts):
+    """generate tne center points, based on the 4 coordinates of the box
+
+    Args:
+        pts (_type_): 4 tracked point
+
+    Returns:
+        np array: center point
+    """
     avg_x_coord = np.average(pts[:, 0]).astype(np.float32)
     avg_y_coord = np.average(pts[:, 1]).astype(np.float32)
     return np.array([avg_x_coord, avg_y_coord], dtype=np.float32)
@@ -49,8 +57,14 @@ def plot_measures(frames,y,z):
     plt.show()
 
 def plot_list_count(x, y,Xname,Yname):
+    """# Plotting the curve
 
-    # Plotting  the curve
+    Args:
+        x , y 
+        Xname (string): the name you want to showed in the chart
+        Yname (string):  the name you want to showed in the chart
+    """
+    
     plt.plot(x, y, color='r', label=Xname+Yname+' hist')
     # Naming the x-axis, y-axis and the whole graph
     plt.xlabel(Xname)
