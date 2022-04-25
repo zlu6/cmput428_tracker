@@ -1,6 +1,7 @@
 # cmput428_tracker
 
 Camshift + KF + Edge histgram detection
+
 We acknowledge the orginal idea from paper 
 
 I. Iraei and K. Faez, "Object tracking with occlusion handling using mean shift, Kalman filter and Edge Histogram," 2015 2nd International Conference on 
