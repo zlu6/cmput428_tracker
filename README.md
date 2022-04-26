@@ -12,12 +12,16 @@ Edge detection : Sobel filter
 
 We assume occlusion wont last longer than  1 second
 
-To run the tracker based on your webcam, use
 
+## Run Instructions
+1. clone the code on your machine
+2. open terminal to run our tracker in your webcan
+```bash
 $ python3 main.py
-
-Then select your interest region and press "space"; If you want to exit the program, simply press "q"
+```
+3. Then select your interest region and press "space"; If you want to exit the program, simply press "q"
 
 For historical data
-
+```bash
 $ python3 videoReadTracker.py
+```bash
