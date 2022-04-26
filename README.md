@@ -14,7 +14,9 @@ We assume occlusion wont last longer than  1 second
 
 
 ## Run Instructions
-#webcam
+
+webcam
+
 1. clone the code on your machine
 2. open terminal to run our tracker in your webcan
 ```bash
