@@ -47,6 +47,7 @@ bhattacharyya_dist_kf_list = []
 frame_list = []
 edge_pixel_count_list =[]
 slope_list = []
+kalmanErrorCovarinace_list = []
 
 # CV2 methond
 # kf = cv2.KalmanFilter(4, 2)
@@ -171,8 +172,9 @@ while True:
             # cv2.imshow("tracked circle", frame)
             # cv2.waitKey(500)
         # prediction = kf.predict()
-
-
+        #print()
+        print(np.trace(KF.P_t), "haha")
+        kalmanErrorCovarinace_list.append(np.trace(KF.P_t))
         #if occlusion occurs , we use the old estimate to get new KF prediction 
         if count_frame > 10:
             
@@ -266,6 +268,7 @@ while True:
 
 plot_measures(frame_list,bhattacharyya_dist_cam_list, bhattacharyya_dist_kf_list)
 plot_list_count(frame_list,slope_list, "Frame", "Slope")
+plot_list_count(frame_list,kalmanErrorCovarinace_list, "Frame", "kalmanErrorCovarinace")
 save_list_txt(bhattacharyya_dist_cam_list, "bhattacharyya_dist_cam_list")
 save_list_txt(bhattacharyya_dist_kf_list, "bhattacharyya_dist_kf")
 save_list_txt(frame_list, "frame_list")
