@@ -31,4 +31,5 @@ $ python3 videoReadTracker.py
 ```
 
 ## Presentation
-
+1. presentation slide https://docs.google.com/presentation/d/1wC0rU4b4YoEkYRMaIkj_Qb1PBh5flPngJbR8Ql8KhwU/edit#slide=id.p
+2. Demo video https://drive.google.com/file/d/1LWRu59ZxrkqZKq28_cwwOhu22VgdQQOf/view?usp=sharing
