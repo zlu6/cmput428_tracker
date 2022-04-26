@@ -22,8 +22,8 @@ $ python3 main.py
 ```
 3. Then select your interest region and press "space"; If you want to exit the program, simply press "q"
 
-# For historical data in video
+# For historical data in video format
 
 ```bash
 $ python3 videoReadTracker.py
-```bash
+```
